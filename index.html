@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Evaluation Task</title>
+  <meta name="github-token" content="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">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f9f9f9;
+      padding: 30px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #4CAF50;
+    }
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .description {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .question {
+      margin-bottom: 20px;
+    }
+    .question h3 {
+      color: #4CAF50;
+      margin-bottom: 10px;
+    }
+    .question p {
+      font-size: 16px;
+      margin: 5px 0;
+    }
+    label {
+      font-weight: bold;
+      color: #333;
+      font-size: 16px;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #4CAF50;
+      font-size: 18px;
+      margin-right: 10px;
+    }
+    input[type="number"], select {
+      width: 60px;
+      padding: 8px;
+      margin: 5px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    select {
+      padding: 8px;
+      width: 160px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: block;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .rating {
+      width: 60px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Task Evaluation</h1>
+  <div class="container">
+    <div class="description">
+      <p>
+        In this task, you will be asked to evaluate reference materials based on two criteria:
+        <strong>Credibility</strong> and <strong>Redundancy</strong>. You will rate each reference on a scale from 1 to 5 for both criteria. 
+        Additionally, for answer-based tasks, you will assess the correctness of the answers. Please ensure your evaluations are accurate and thoughtful. Thank you for your participation!
+      </p>
+    </div>
+
+    <div id="taskContainer" style="display:none;">
+      <div id="questions"></div>
+      <button onclick="submitTask()">Submit Evaluation</button>
+    </div>
+
+    <div id="codeInput">
+      <button onclick="startTask()">Start Evaluation</button>
+    </div>
+  </div>
+
+  <script>
+    localStorage.clear();
+    function getGitHubToken() {
+      return document.querySelector('meta[name="github-token"]').getAttribute('content');
+    }
+    const TASKS_URL = "https://gist.githubusercontent.com/SjJ1017/52a8eef6c601f0d9c7ebf33743b0e919/raw/03491b41fdfe425bb66bbcdb20b5f113a11804a0/task.json";
+    const RESULTS_GIST_ID = "58de4256398c7f7fb51362b0a2c477fb"; // Replace with your results Gist ID
+    const GITHUB_TOKEN  = getGitHubToken(); // Replace with your GitHub access token
+
+    let currentTask = null;
+
+    async function startTask() {
+      const tasks = await loadTasks();
+
+      // Randomly sample k questions from answer and reference types
+      const k = 5; // Number of questions to sample
+      const selectedAnswerTasks = getRandomTasks(tasks.filter(t => t.type === 'answer'), k);
+      const selectedReferenceTasks = getRandomTasks(tasks.filter(t => t.type === 'reference'), k);
+      const selectedTasks = [...selectedAnswerTasks, ...selectedReferenceTasks];
+
+      currentTask = selectedTasks;
+      document.getElementById('codeInput').style.display = 'none';
+      document.getElementById('taskContainer').style.display = 'block';
+      renderQuestions(selectedTasks);
+    }
+
+    async function loadTasks() {
+      const response = await fetch(TASKS_URL);
+      return await response.json();
+    }
+
+    function getRandomTasks(tasks, k) {
+      // Shuffle and select k random tasks
+      const shuffledTasks = tasks.sort(() => 0.5 - Math.random());
+      return shuffledTasks.slice(0, k);
+    }
+
+    function renderQuestions(questions) {
+      const container = document.getElementById('questions');
+      container.innerHTML = questions.map(q => {
+        if (q.type === 'answer') {
+          return `
+            <div class="question">
+              <h3>Question: ${q.question}</h3>
+              <p><span class="highlight">Golden Answer:</span> ${q.golden_answer}</p>
+              <p><span class="highlight">Answer to Evaluate:</span> ${q.answer}</p>
+              <select class="judgement">
+                <option value="correct">✅ Correct</option>
+                <option value="wrong">❌ Wrong</option>
+                <option value="refuse">🤭 Refusal Answer</option>
+                <option value="uncertain">❓ I'm Not Sure</option>
+              </select>
+            </div>
+          `;
+        } else if (q.type === 'reference') {
+          return `
+            <div class="question">
+              <h3>Question: ${q.question}</h3>
+              <p><span class="highlight">Golden Answer:</span> ${q.golden_answer}</p>
+              <p><span class="highlight">Reference:</span> ${q.reference}</p>
+
+              <label for="credibility-${q.id}"><span class="highlight">1. Credibility</span> (1 = not credible, 5 = fully credible):</label>
+              <input type="number" id="credibility-${q.id}" class="rating" min="1" max="5">
+
+              <label for="redundancy-${q.id}"><span class="highlight">2. Redundancy</span> (1 = no redundancy, 5 = very redundant):</label>
+              <input type="number" id="redundancy-${q.id}" class="rating" min="1" max="5">
+            </div>
+          `;
+        }
+      }).join('');
+    }
+
+    async function submitTask() {
+      const results = Array.from(document.querySelectorAll('.question')).map((div, i) => {
+        const task = currentTask[i];
+        if (task.type === 'reference') {
+          const credibility = div.querySelector(`#credibility-${task.id}`).value;
+          const redundancy = div.querySelector(`#redundancy-${task.id}`).value;
+          return {
+            question_id: task.id,
+            credibility: credibility,
+            redundancy: redundancy
+          };
+        } else {
+          const judgement = div.querySelector('.judgement').value;
+          return {
+            question_id: task.id,
+            judgement: judgement
+          };
+        }
+      });
+
+      const submission = {
+        results: results,
+        timestamp: new Date().toISOString()
+      };
+
+      // Fetch current Gist content
+      try {
+        const currentData = await fetchCurrentGist();
+        const newResults = currentData ? [...currentData.results, submission] : [submission];
+
+        // Submit to GitHub Gist
+        await saveResult(newResults);
+        alert('Submission successful! Thank you for participating in the evaluation.');
+        location.reload();
+      } catch (error) {
+        alert('Submission failed, please try again.');
+      }
+    }
+
+    async function fetchCurrentGist() {
+      const response = await fetch(`https://api.github.com/gists/${RESULTS_GIST_ID}`, {
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const currentContent = data.files['results.json'] ? JSON.parse(data.files['results.json'].content) : null;
+        return currentContent;
+      }
+
+      return null;
+    }
+
+    async function saveResult(data) {
+      const response = await fetch(`https://api.github.com/gists/${RESULTS_GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            "results.json": {
+              content: JSON.stringify({ results: data }, null, 2)
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Submission failed');
+      }
+    }
+  </script>
+</body>
+</html>
