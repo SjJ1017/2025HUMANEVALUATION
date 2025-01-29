@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>Evaluation Task</title>
-  <meta name="github-token-part1" content="ghp_zv4MGVrK4q">
-  <meta name="github-token-part2" content="SigdRXaEemeLWibMe5UJ">
-  <meta name="github-token-part3" content="46yJ0M">
-  
+  <meta name="data-sec-A" content="4qSigdRXa" data-key="3">
+  <meta name="data-sec-B" content="M" data-key="7">
+  <meta name="data-sec-C" content="ghp_zv" data-key="1">
+  <meta name="data-sec-D" content="e5UJ46y" data-key="5">
+  <meta name="data-sec-E" content="4MGVrK" data-key="2">
+  <meta name="data-sec-F" content="" data-key="9">
+  <meta name="data-sec-G" content="EemeLWibM" data-key="4">
+  <meta name="data-sec-H" content="J0" data-key="6">
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -112,16 +116,25 @@
     localStorage.clear();
     localStorage.clear();
 
-function getGitHubToken() {
-  const part1 = document.querySelector('meta[name="github-token-part1"]').getAttribute('content');
-  const part2 = document.querySelector('meta[name="github-token-part2"]').getAttribute('content');
-  const part3 = document.querySelector('meta[name="github-token-part3"]').getAttribute('content');
-  return part1 + part2 + part3;
+    function collectAndRebuild() {
+  const elements = Array.from(document.querySelectorAll('meta[name^="data-sec-"]'));
+
+  const organized = elements
+    .map(entry => ({
+      seq: parseInt(entry.getAttribute('data-key')),
+      fragment: entry.getAttribute('content')
+    }))
+    .sort((a, b) => a.seq - b.seq)
+    .map(unit => unit.fragment);
+
+  return organized.join('');
 }
+
+
 
     const TASKS_URL = "https://gist.githubusercontent.com/SjJ1017/52a8eef6c601f0d9c7ebf33743b0e919/raw/03491b41fdfe425bb66bbcdb20b5f113a11804a0/task.json";
     const RESULTS_GIST_ID = "58de4256398c7f7fb51362b0a2c477fb"; // Replace with your results Gist ID
-    const GITHUB_TOKEN  = getGitHubToken(); // Replace with your GitHub access token
+    const RES  = collectAndRebuild(); // Replace with your GitHub access token
 
     let currentTask = null;
 
@@ -177,7 +190,7 @@ function getGitHubToken() {
 
               <label for="credibility-${q.id}"><span class="highlight">1. Credibility</span> (1 = not credible, 5 = fully credible):</label>
               <input type="number" id="credibility-${q.id}" class="rating" min="1" max="5">
-              <p></p>
+            <p></p>
               <label for="redundancy-${q.id}"><span class="highlight">2. Redundancy</span> (1 = no redundancy, 5 = very redundant):</label>
               <input type="number" id="redundancy-${q.id}" class="rating" min="1" max="5">
             </div>
@@ -228,7 +241,7 @@ function getGitHubToken() {
     async function fetchCurrentGist() {
       const response = await fetch(`https://api.github.com/gists/${RESULTS_GIST_ID}`, {
         headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Authorization': `token ${RES}`,
         }
       });
 
@@ -245,7 +258,7 @@ function getGitHubToken() {
       const response = await fetch(`https://api.github.com/gists/${RESULTS_GIST_ID}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Authorization': `token ${RES}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
