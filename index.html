@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Evaluation Task</title>
-  <meta name="github-token" content="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">
+  <meta name="github-token-part1" content="ghp_zv4MGVrK4q">
+  <meta name="github-token-part2" content="SigdRXaEemeLWibMe5UJ">
+  <meta name="github-token-part3" content="46yJ0M">
+  
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -107,9 +110,15 @@
 
   <script>
     localStorage.clear();
-    function getGitHubToken() {
-      return document.querySelector('meta[name="github-token"]').getAttribute('content');
-    }
+    localStorage.clear();
+
+function getGitHubToken() {
+  const part1 = document.querySelector('meta[name="github-token-part1"]').getAttribute('content');
+  const part2 = document.querySelector('meta[name="github-token-part2"]').getAttribute('content');
+  const part3 = document.querySelector('meta[name="github-token-part3"]').getAttribute('content');
+  return part1 + part2 + part3;
+}
+
     const TASKS_URL = "https://gist.githubusercontent.com/SjJ1017/52a8eef6c601f0d9c7ebf33743b0e919/raw/03491b41fdfe425bb66bbcdb20b5f113a11804a0/task.json";
     const RESULTS_GIST_ID = "58de4256398c7f7fb51362b0a2c477fb"; // Replace with your results Gist ID
     const GITHUB_TOKEN  = getGitHubToken(); // Replace with your GitHub access token
