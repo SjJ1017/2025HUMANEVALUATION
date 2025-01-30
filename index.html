@@ -132,7 +132,7 @@
 
 
 
-    const TASKS_URL = "https://gist.githubusercontent.com/SjJ1017/52a8eef6c601f0d9c7ebf33743b0e919/raw/03491b41fdfe425bb66bbcdb20b5f113a11804a0/task.json";
+    const TASKS_URL = "https://gist.githubusercontent.com/SjJ1017/52a8eef6c601f0d9c7ebf33743b0e919/raw/f94fe48537d97d967ece2ee4f9b772e794c46d65/task.json";
     const RESULTS_GIST_ID = "58de4256398c7f7fb51362b0a2c477fb"; // Replace with your results Gist ID
     const RES  = collectAndRebuild(); // Replace with your GitHub access token
 
@@ -144,7 +144,7 @@
       // Randomly sample k questions from answer and reference types
       const k = 5; // Number of questions to sample
       const selectedAnswerTasks = getRandomTasks(tasks.filter(t => t.type === 'answer'), k);
-      const selectedReferenceTasks = getRandomTasks(tasks.filter(t => t.type === 'reference'), k);
+      const selectedReferenceTasks = getRandomTasks(tasks.filter(t => t.type === 'ref'), k);
       const selectedTasks = [...selectedAnswerTasks, ...selectedReferenceTasks];
 
       currentTask = selectedTasks;
@@ -174,24 +174,29 @@
               <p><span class="highlight">Golden Answer:</span> ${q.golden_answer}</p>
               <p><span class="highlight">Answer to Evaluate:</span> ${q.answer}</p>
               <select class="judgement">
+                <option value="uncertain">❓ I'm Not Sure</option>
                 <option value="correct">✅ Correct</option>
                 <option value="wrong">❌ Wrong</option>
                 <option value="refuse">🤭 Refusal Answer</option>
-                <option value="uncertain">❓ I'm Not Sure</option>
+
               </select>
             </div>
           `;
-        } else if (q.type === 'reference') {
+        } else if (q.type === 'ref') {
           return `
             <div class="question">
               <h3>Question: ${q.question}</h3>
-              <p><span class="highlight">Reference:</span> ${q.reference}</p>
+              <p><span class="highlight">Generated Reference:</span> ${q.reference}</p>
+              <p><span class="highlight">Generated Answer:</span> ${q.answer}</p>
 
               <label for="credibility-${q.id}"><span class="highlight">1. Credibility</span> (1 = not credible, 5 = fully credible):</label>
               <input type="number" id="credibility-${q.id}" class="rating" min="1" max="5">
             <p></p>
               <label for="redundancy-${q.id}"><span class="highlight">2. Redundancy</span> (1 = no redundancy, 5 = very redundant):</label>
               <input type="number" id="redundancy-${q.id}" class="rating" min="1" max="5">
+            <p></p>
+              <label for="trust-${q.id}"><span class="highlight">3. How you trust the correctness of the answer?</span> (1 = I don't trust, 5 = very trustworthy):</label>
+              <input type="number" id="trust-${q.id}" class="rating" min="1" max="5">
             </div>
           `;
         }
@@ -201,13 +206,15 @@
     async function submitTask() {
       const results = Array.from(document.querySelectorAll('.question')).map((div, i) => {
         const task = currentTask[i];
-        if (task.type === 'reference') {
+        if (task.type === 'ref') {
           const credibility = div.querySelector(`#credibility-${task.id}`).value;
           const redundancy = div.querySelector(`#redundancy-${task.id}`).value;
+          const trsut = div.querySelector(`#trust-${task.id}`).value;
           return {
             question_id: task.id,
             credibility: credibility,
-            redundancy: redundancy
+            redundancy: redundancy,
+            trust: trsut
           };
         } else {
           const judgement = div.querySelector('.judgement').value;
