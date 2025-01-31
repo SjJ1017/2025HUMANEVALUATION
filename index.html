@@ -92,13 +92,13 @@
   </style>
 </head>
 <body>
-  <h1>Task Evaluation</h1>
+  <h1>Evaluation Task</h1>
   <div class="container">
     <div class="description">
       <p>
         In this task, you will be asked to evaluate reference materials based on two criteria:
-        <strong>Credibility</strong> and <strong>Redundancy</strong>. You will rate each reference on a scale from 1 to 5 for both criteria. Then you have to evaluate the <strong>trustworthiness</strong> of the generated answer on a scale from 1 to 5.
-        Additionally, for answer-based tasks, you will assess the <strong>correctness</strong> of the answers. If you are unable to judge or you think there is an issue with the provided data, such as a problem with the Golden Answer or ambiguity in the question, you can choose the "I'm not sure" option. Please ensure your evaluations are accurate and thoughtful. Thank you for your participation!
+        <strong>Credibility</strong> and <strong>Redundancy</strong>. You will rate each reference on a scale from 1 to 5 for both criteria. Then you have to evaluate the <strong>Trustworthiness</strong> of the generated answer on a scale from 1 to 5.
+        Additionally, for answer-based tasks, you will assess the <strong>Correctness</strong> of the answers. If you are unable to judge or you think there is an issue with the provided data, such as a problem with the Golden Answer or ambiguity in the question, you can choose the "I'm not sure" option. Please ensure your evaluations are accurate and thoughtful. Thank you for your participation!
       </p>
     </div>
 
@@ -108,6 +108,10 @@
     </div>
 
     <div id="codeInput">
+      <label for="username">Username:</label>
+      <input type="text" id="username" placeholder="Enter your username">
+      <label for="taskNumber">Task Number:</label>
+      <input type="number" id="taskNumber" placeholder="Enter task number" min="1">
       <button onclick="startTask()">Start Evaluation</button>
     </div>
   </div>
@@ -117,35 +121,48 @@
     localStorage.clear();
 
     function collectAndRebuild() {
-  const elements = Array.from(document.querySelectorAll('meta[name^="data-sec-"]'));
+      const elements = Array.from(document.querySelectorAll('meta[name^="data-sec-"]'));
 
-  const organized = elements
-    .map(entry => ({
-      seq: parseInt(entry.getAttribute('data-key')),
-      fragment: entry.getAttribute('content')
-    }))
-    .sort((a, b) => a.seq - b.seq)
-    .map(unit => unit.fragment);
+      const organized = elements
+        .map(entry => ({
+          seq: parseInt(entry.getAttribute('data-key')),
+          fragment: entry.getAttribute('content')
+        }))
+        .sort((a, b) => a.seq - b.seq)
+        .map(unit => unit.fragment);
 
-  return organized.join('');
-}
-
-
+      return organized.join('');
+    }
 
     const TASKS_URL = "https://gist.githubusercontent.com/SjJ1017/52a8eef6c601f0d9c7ebf33743b0e919/raw/f94fe48537d97d967ece2ee4f9b772e794c46d65/task.json";
-    const RESULTS_GIST_ID = "58de4256398c7f7fb51362b0a2c477fb"; // Replace with your results Gist ID
-    const RES  = collectAndRebuild(); // Replace with your GitHub access token
+    const RESULTS_GIST_ID = "58de4256398c7f7fb51362b0a2c477fb"; 
+    const RES = collectAndRebuild(); 
 
     let currentTask = null;
+    let username = null;
+    let taskNumber = null;
 
     async function startTask() {
+      username = document.getElementById('username').value;
+      taskNumber = parseInt(document.getElementById('taskNumber').value);
+
+      if (!username || !taskNumber || taskNumber < 1) {
+        alert("Please enter a valid username and task number.");
+        return;
+      }
+
       const tasks = await loadTasks();
 
-      // Randomly sample k questions from answer and reference types
+      // Sample k questions from answer and reference types starting from (taskNumber - 1) * k
       const k = 5; // Number of questions to sample
-      const selectedAnswerTasks = getRandomTasks(tasks.filter(t => t.type === 'answer'), k);
-      const selectedReferenceTasks = getRandomTasks(tasks.filter(t => t.type === 'ref'), k);
+      const selectedAnswerTasks = getTasksFromIndex(tasks.filter(t => t.type === 'answer'), k, taskNumber);
+      const selectedReferenceTasks = getTasksFromIndex(tasks.filter(t => t.type === 'ref'), k, taskNumber);
       const selectedTasks = [...selectedAnswerTasks, ...selectedReferenceTasks];
+
+      if (selectedTasks.length === 0) {
+        alert("No tasks available for the selected task number.");
+        return;
+      }
 
       currentTask = selectedTasks;
       document.getElementById('codeInput').style.display = 'none';
@@ -158,10 +175,9 @@
       return await response.json();
     }
 
-    function getRandomTasks(tasks, k) {
-      // Shuffle and select k random tasks
-      const shuffledTasks = tasks.sort(() => 0.5 - Math.random());
-      return shuffledTasks.slice(0, k);
+    function getTasksFromIndex(tasks, k, taskNumber) {
+      const startIndex = k * (taskNumber - 1);
+      return tasks.slice(startIndex, startIndex + k);
     }
 
     function renderQuestions(questions) {
@@ -178,7 +194,6 @@
                 <option value="correct">✅ Correct</option>
                 <option value="wrong">❌ Wrong</option>
                 <option value="refuse">🤭 Refusal Answer</option>
-
               </select>
             </div>
           `;
@@ -209,12 +224,12 @@
         if (task.type === 'ref') {
           const credibility = div.querySelector(`#credibility-${task.id}`).value;
           const redundancy = div.querySelector(`#redundancy-${task.id}`).value;
-          const trsut = div.querySelector(`#trust-${task.id}`).value;
+          const trust = div.querySelector(`#trust-${task.id}`).value;
           return {
             question_id: task.id,
             credibility: credibility,
             redundancy: redundancy,
-            trust: trsut
+            trust: trust
           };
         } else {
           const judgement = div.querySelector('.judgement').value;
@@ -226,6 +241,8 @@
       });
 
       const submission = {
+        username: username,
+        task_number: taskNumber,
         results: results,
         timestamp: new Date().toISOString()
       };
